@@ -1,0 +1,153 @@
+-- USO DE LA BASE DE DATOS
+USE BikeStore
+
+-- CREACIÓN DEL ESQUEMA HOSPITAL
+CREATE SCHEMA hospital
+
+-- CÓDIGO DE CREACIÓN DE LA TABLA PACIENTES
+CREATE TABLE hospital.pacientes
+(
+    numSegSocial CHAR(10) NOT NULL,
+    nombre VARCHAR(30) NOT NULL,
+    apellidos VARCHAR(50) NOT NULL,
+    domicilio VARCHAR(80) NOT NULL,
+    poblacion VARCHAR(25) NOT NULL,
+    provincia VARCHAR(20) NOT NULL,
+    codPostal CHAR(5) NOT NULL,
+    telefono CHAR(9) NOT NULL,
+    numHistorial CHAR(7) NOT NULL PRIMARY KEY, 
+    sexo CHAR(1) NOT NULL CHECK(sexo = 'H' OR sexo = 'M')
+);
+
+-- CÓDIGO DE CREACIÓN DE LA TABLA MÉDICOS
+CREATE TABLE hospital.medicos
+(
+	codID CHAR(3) NOT NULL PRIMARY KEY,
+	nombre VARCHAR(30) NOT NULL,
+	apellidos VARCHAR(50) NOT NULL,
+	especialidad VARCHAR(30) NOT NULL,
+	fechaAlta DATE NOT NULL,
+	cargo VARCHAR(25) NOT NULL,
+	numColegiado INT NOT NULL,
+	observaciones VARCHAR(500) NULL
+);
+
+-- CÓDIGO DE CREACIÓN DE LA TABLA INGRESOS
+CREATE TABLE hospital.ingresos
+(
+	ingresoID INT IDENTITY(1,1) PRIMARY KEY,
+	numHistorial CHAR(7) NOT NULL,
+	fechaIngreso DATE NOT NULL,
+	codID CHAR(3) NOT NULL,
+	numPlanta TINYINT NOT NULL CHECK(numPlanta <= 10),
+	numCama TINYINT NOT NULL CHECK(numCama <= 200),
+	alergico CHAR(2) NOT NULL,
+	observaciones VARCHAR(500) NULL
+);
+
+-- INSERTAR LOS DATOS 
+INSERT INTO hospital.pacientes (numSegSocial, nombre, apellidos, domicilio, poblacion, provincia, codPostal, telefono, numHistorial, sexo)
+VALUES ('08/7888888','José Eduardo','Romerales Pinto','C/ Azorín, 34 3o','Móstoles','Madrid',28935,913458745,'10203-F','H')
+INSERT INTO hospital.pacientes (numSegSocial, nombre, apellidos, domicilio, poblacion, provincia, codPostal, telefono, numHistorial, sexo)
+VALUES ('08/7234823','Ángel','Ruíz Picasso','C/ Salmerón, 212','Madrid','Madrid',28028,915653433,'11454-L','H')
+INSERT INTO hospital.pacientes (numSegSocial, nombre, apellidos, domicilio, poblacion, provincia, codPostal, telefono, numHistorial, sexo)
+VALUES ('08/7333333','Mercedes','Romero Carvajal','C/ Málaga, 13','Móstoles','Madrid',28935,914556745,'14546-E','M')
+INSERT INTO hospital.pacientes (numSegSocial, nombre, apellidos, domicilio, poblacion, provincia, codPostal, telefono, numHistorial, sexo)
+VALUES ('08/7555555','Martín','Fendández López','C/ Sastres, 21','Madrid','Madrid',28028,913333333,'15413-S','H')
+
+INSERT INTO hospital.medicos (codID, nombre, apellidos, especialidad, fechaAlta, cargo, numColegiado, observaciones)
+VALUES ('AJH','Antonio','Jaén Hernández','Pediatría','12-08-82','Adjunto',2113,'Está próxima su retirada')
+INSERT INTO hospital.medicos (codID, nombre, apellidos, especialidad, fechaAlta, cargo, numColegiado)
+VALUES ('CEM','Carmen','Esterill Manrique','Psiquiatria','13-02-92','Jefe de sección',1231)
+INSERT INTO hospital.medicos (codID, nombre, apellidos, especialidad, fechaAlta, cargo, numColegiado)
+VALUES ('RLQ','Rocío','López Quijada','Médico de familia','23-09-94','Titular',1331)
+
+INSERT INTO hospital.ingresos (numHistorial, fechaIngreso, codID, numPlanta, numCama, alergico, observaciones)
+VALUES ('10203-F','23/01/2009','AJH',5,121,'No','Epiléptico')
+INSERT INTO hospital.ingresos (numHistorial, fechaIngreso, codID, numPlanta, numCama, alergico, observaciones)
+VALUES ('15413-S','13/03/2009','RLQ',2,5,'Sí','Alérgico a la penicilina')
+INSERT INTO hospital.ingresos (numHistorial, fechaIngreso, codID, numPlanta, numCama, alergico)
+VALUES ('11454-L','25/05/2009','RLQ',3,31,'No')
+INSERT INTO hospital.ingresos (numHistorial, fechaIngreso, codID, numPlanta, numCama, alergico)
+VALUES ('15413-S','29/01/2010','CEM',2,13,'No')
+INSERT INTO hospital.ingresos (numHistorial, fechaIngreso, codID, numPlanta, numCama, alergico, observaciones)
+VALUES ('14546-E','24/02/2010','AJH',1,5,'Sí','Alérgico al Paidoterín')
+
+-- CONSULTA 1
+SELECT nombre, fechaAlta FROM hospital.medicos
+
+-- CONSULTA 2
+SELECT nombre FROM hospital.pacientes
+WHERE poblacion = 'Madrid'
+
+-- CONSULTA 3
+SELECT nombre FROM hospital.medicos AS M
+INNER JOIN hospital.ingresos AS I ON M.codID = I.codID
+WHERE I.fechaIngreso BETWEEN '01-01-2010' AND '28-02-2010'
+
+-- CONSULTA 4
+SELECT nombre, apellidos FROM hospital.pacientes AS P
+INNER JOIN hospital.ingresos AS I ON P.numHistorial = I.numHistorial
+WHERE (I.fechaIngreso BETWEEN '01-01-2009' AND '31-05-2009') AND alergico = 'Sí'
+
+-- CONSULTA 5
+SELECT P.* FROM hospital.pacientes AS P
+INNER JOIN hospital.ingresos AS I ON P.numHistorial = I.numHistorial
+INNER JOIN hospital.medicos AS M ON I.codID = M.codID
+WHERE I.codID = 'AJH'
+
+-- PROCEDIMIENTO ALMACENADO PARA INTRODUCIR UN MÉDICO
+CREATE PROCEDURE hospital.pr_altaMedico
+	@p_codID CHAR(3),
+	@p_nombre VARCHAR(30),
+	@p_apellido VARCHAR(50),
+	@p_especialidad VARCHAR(30),
+	@p_fechaAlta DATE,
+	@p_cargo VARCHAR(25),
+	@p_numColegiado INT,
+	@p_observaciones VARCHAR(500)
+AS
+BEGIN
+	IF @p_numColegiado < 1000
+		PRINT 'El número de colegiado tiene que ser superior a 999'
+	ELSE
+		BEGIN
+			INSERT INTO hospital.medicos (codID, nombre, apellidos, especialidad, fechaAlta, cargo, numColegiado, observaciones)
+			VALUES (@p_codID, @p_nombre, @p_apellido, @p_especialidad, @p_fechaAlta, @p_cargo, @p_numColegiado, @p_observaciones)
+		END
+END
+
+-- PROCEDIMIENTO ALMACENADO DE SACAR DATOS CON DOS FECHAS
+CREATE PROCEDURE hospital.pr_pacientesEntreFechas
+	@p_fechaInicio DATE,
+	@p_fechaFinal DATE
+AS
+BEGIN
+	SELECT P.* FROM hospital.pacientes AS P
+	INNER JOIN hospital.ingresos AS I ON P.numHistorial = I.numHistorial
+	WHERE fechaIngreso BETWEEN @p_fechaInicio AND @p_fechaFinal
+END
+
+-- FUNCIÓN PARA CONTAR EL NÚMERO DE PACIENTES EN EL SISTEMA
+CREATE FUNCTION hospital.fn_contarPacientes()
+RETURNS INT
+AS
+BEGIN
+	DECLARE @numTotal INT
+	
+	SELECT @numTotal = COUNT(numHistorial) FROM hospital.pacientes
+
+	RETURN @numTotal
+END
+
+-- FUNCIÓN PARA CONTAR LOS PACIENTES HOMBRES Y MUJERES
+CREATE FUNCTION hospital.fn_pacienteGenero(@genero CHAR)
+RETURNS INT
+AS
+BEGIN
+	DECLARE @numTotal INT
+
+	SELECT @numTotal = COUNT(sexo) FROM hospital.pacientes
+
+	RETURN @numTotal
+END
